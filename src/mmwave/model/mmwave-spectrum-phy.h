@@ -105,7 +105,7 @@ public:
 
   enum State
   {
-    IDLE = 0,
+    IDLE,
     TX,
     RX_DATA,
     RX_CTRL
@@ -126,8 +126,6 @@ public:
 
   Ptr<AntennaModel> GetRxAntenna ();
   void SetAntenna (Ptr<AntennaModel> a);
-
-  void SetState (State newState);
 
   void SetNoisePowerSpectralDensity (Ptr<const SpectrumValue> noisePsd);
   void SetTxPowerSpectralDensity (Ptr<SpectrumValue> TxPsd);
@@ -180,6 +178,11 @@ public:
 
 
 private:
+
+  /**
+   * \brief change the state
+   * \param the new state
+   */
   void ChangeState (State newState);
   void EndTx ();
   void EndRxData ();
