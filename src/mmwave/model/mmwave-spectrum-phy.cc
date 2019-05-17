@@ -334,8 +334,8 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
       // This should be done inside the UePhy class as a state machine
 
       bool isAllocated = true;
-      Ptr<mmwave::MmWaveUeNetDevice> ueRx = 0;
-      ueRx = DynamicCast<mmwave::MmWaveUeNetDevice> (GetDevice ());
+      Ptr<MmWaveUeNetDevice> ueRx = 0;
+      ueRx = DynamicCast<MmWaveUeNetDevice> (GetDevice ());
       Ptr<McUeNetDevice> rxMcUe = 0;
       rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
 
@@ -385,7 +385,7 @@ MmWaveSpectrumPhy::StartRxData (Ptr<MmwaveSpectrumSignalParametersDataFrame> par
   NS_LOG_FUNCTION (this);
 
   Ptr<MmWaveEnbNetDevice> enbRx = DynamicCast<MmWaveEnbNetDevice> (GetDevice ());
-  Ptr<mmwave::MmWaveUeNetDevice> ueRx = DynamicCast<MmWaveUeNetDevice> (GetDevice ());
+  Ptr<MmWaveUeNetDevice> ueRx = DynamicCast<MmWaveUeNetDevice> (GetDevice ());
   Ptr<McUeNetDevice> rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
 
   switch (m_state)
@@ -487,8 +487,8 @@ MmWaveSpectrumPhy::StartRxCtrl (Ptr<SpectrumSignalParameters> params)
           {
             if (m_state == RX_CTRL)
               {
-                Ptr<mmwave::MmWaveUeNetDevice> ueRx =
-                  DynamicCast<mmwave::MmWaveUeNetDevice> (GetDevice ());
+                Ptr<MmWaveUeNetDevice> ueRx =
+                  DynamicCast<MmWaveUeNetDevice> (GetDevice ());
                 Ptr<McUeNetDevice> rxMcUe =
                   DynamicCast<McUeNetDevice> (GetDevice ());
                 if (ueRx || rxMcUe)
@@ -543,7 +543,7 @@ MmWaveSpectrumPhy::EndRxData ()
     }
 
   Ptr<MmWaveEnbNetDevice> enbRx = DynamicCast<MmWaveEnbNetDevice> (GetDevice ());
-  Ptr<mmwave::MmWaveUeNetDevice> ueRx = DynamicCast<mmwave::MmWaveUeNetDevice> (GetDevice ());
+  Ptr<MmWaveUeNetDevice> ueRx = DynamicCast<MmWaveUeNetDevice> (GetDevice ());
   Ptr<McUeNetDevice> rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
 
   NS_ASSERT (m_state = RX_DATA);
