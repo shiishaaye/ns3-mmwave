@@ -45,11 +45,18 @@ void ReportUlValue (const SpectrumValue& sinrPerceived)
   f.close ();
 }
 
+// This function chage the position of a node
+void
+ChangePosition (Ptr<Node> n, Vector pos)
+{
+  n->GetObject<MobilityModel> ()->SetPosition (pos);
+}
+
 int
 main (int argc, char *argv[])
 {
   double dist = 50;
-  double simTime = 0.1;
+  double simTime = 100;
   // RNG
   RngSeedManager::SetSeed (1);
   RngSeedManager::SetRun (1);
@@ -89,11 +96,12 @@ main (int argc, char *argv[])
 
   // create the enb node
   NodeContainer enbNodes;
-  enbNodes.Create (1);
+  enbNodes.Create (2);
 
   // set mobility
   Ptr<ListPositionAllocator> enbPositionAlloc = CreateObject<ListPositionAllocator> ();
   enbPositionAlloc->Add (Vector (0.0, 0.0, 15.0));
+  enbPositionAlloc->Add (Vector (0.0, 1.0, 15.0));
 
   MobilityHelper enbmobility;
   enbmobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -106,15 +114,16 @@ main (int argc, char *argv[])
 
   // create ue node
   NodeContainer ueNodes;
-  ueNodes.Create (1);
+  ueNodes.Create (2);
 
   // set mobility
   MobilityHelper uemobility;
   uemobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   Ptr<ListPositionAllocator> uePositionAlloc = CreateObject<ListPositionAllocator> ();
   uePositionAlloc->Add (Vector (dist, 0.0, 1.6));
+  uePositionAlloc->Add (Vector (dist, 1.0, 1.6));
   uemobility.SetPositionAllocator (uePositionAlloc);
-  uemobility.Install (ueNodes.Get (0));
+  uemobility.Install (ueNodes);
   BuildingsHelper::Install (ueNodes);
 
   // install ue device
@@ -137,10 +146,12 @@ main (int argc, char *argv[])
   enum EpsBearer::Qci q = EpsBearer::GBR_CONV_VOICE;
   EpsBearer bearer (q);
   helper->ActivateDataRadioBearer (ueNetDevices, bearer);
+  Simulator::Schedule (MilliSeconds (simTime/2), &ChangePosition, ueNodes.Get (1), Vector (dist, 1000, 1.6));
+  Simulator::Schedule (MilliSeconds (simTime/2), &ChangePosition, enbNodes.Get (1), Vector (0.0, 1000, 1.6));
 
   BuildingsHelper::MakeMobilityModelConsistent ();
 
-  Simulator::Stop (Seconds (simTime));
+  Simulator::Stop (MilliSeconds (simTime));
 
   // create a new trace file
   std::ofstream f;
