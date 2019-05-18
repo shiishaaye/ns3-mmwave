@@ -13,6 +13,7 @@
 #include "ns3/log.h"
 #include <map>
 #include "ns3/lte-chunk-processor.h"
+#include <fstream>
 
 using namespace ns3;
 using namespace mmwave;
@@ -23,10 +24,21 @@ using namespace mmwave;
  * uses half of the total bandwidth.
  */
 
+// This function prints the SINR perceived in a file
+void ReportValue (const SpectrumValue& sinrPerceived)
+{
+  double sinrAvg = Sum (sinrPerceived) / (sinrPerceived.GetSpectrumModel ()->GetNumBands ());
+
+  std::ofstream f;
+  f.open ("sinr_trace.txt", std::ios::app);
+  f << Simulator::Now ().GetSeconds () << " " << 10 * log10 (sinrAvg) << " dB" << std::endl;
+  f.close ();
+}
+
 int
 main (int argc, char *argv[])
 {
-  double dist = 10;
+  double dist = 50;
   double simTime = 0.1;
   // RNG
   RngSeedManager::SetSeed (1);
@@ -99,12 +111,9 @@ main (int argc, char *argv[])
   NetDeviceContainer ueNetDevices = helper->InstallUeDevice (ueNodes);
 
   Ptr<MmWaveUePhy> ue0Phy = ueNetDevices.Get (0)->GetObject<MmWaveUeNetDevice> ()->GetPhy ()->GetObject<MmWaveUePhy> ();
-  Ptr<mmWaveChunkProcessor> testDlSinr1 = Create<mmWaveChunkProcessor> ();
-  LteSpectrumValueCatcher dlSinr1Catcher;
-  // TODO define a function which prints the SINR and assign it as callback for
-  // the mmWaveChunkProcessor
-  testDlSinr1->AddCallback (MakeCallback (&LteSpectrumValueCatcher::ReportValue, &dlSinr1Catcher));
-  ue0Phy->GetDlSpectrumPhy ()->AddDataSinrChunkProcessor (testDlSinr1);
+  Ptr<mmWaveChunkProcessor> testDlSinr0 = Create<mmWaveChunkProcessor> ();
+  testDlSinr0->AddCallback (MakeCallback (&ReportValue));
+  ue0Phy->GetDlSpectrumPhy ()->AddDataSinrChunkProcessor (testDlSinr0);
 
   helper->AttachToClosestEnb (ueNetDevices, enbNetDevices);
   helper->EnableTraces ();
@@ -117,9 +126,14 @@ main (int argc, char *argv[])
   BuildingsHelper::MakeMobilityModelConsistent ();
 
   Simulator::Stop (Seconds (simTime));
+
+  // create a new trace file
+  std::ofstream f;
+  f.open ("sinr_trace.txt");
+  f.close ();
+
   Simulator::Run ();
 
-  std::cout << 10.0 * log10 (dlSinr1Catcher.GetValue ()->operator[] (0)) << std::endl;
   Simulator::Destroy ();
 
   return 0;
