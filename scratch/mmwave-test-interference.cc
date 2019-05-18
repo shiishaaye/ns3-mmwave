@@ -24,14 +24,24 @@ using namespace mmwave;
  * uses half of the total bandwidth.
  */
 
-// This function prints the SINR perceived in a file
-void ReportValue (const SpectrumValue& sinrPerceived)
+// These functions prints the SINR perceived in a file
+void ReportDlValue (const SpectrumValue& sinrPerceived)
 {
   double sinrAvg = Sum (sinrPerceived) / (sinrPerceived.GetSpectrumModel ()->GetNumBands ());
 
   std::ofstream f;
   f.open ("sinr_trace.txt", std::ios::app);
-  f << Simulator::Now ().GetSeconds () << " " << 10 * log10 (sinrAvg) << " dB" << std::endl;
+  f << "DL " << " " << Simulator::Now ().GetSeconds () << " " << 10 * log10 (sinrAvg) << " dB" << std::endl;
+  f.close ();
+}
+
+void ReportUlValue (const SpectrumValue& sinrPerceived)
+{
+  double sinrAvg = Sum (sinrPerceived) / (sinrPerceived.GetSpectrumModel ()->GetNumBands ());
+
+  std::ofstream f;
+  f.open ("sinr_trace.txt", std::ios::app);
+  f << "UL " << " " << Simulator::Now ().GetSeconds () << " " << 10 * log10 (sinrAvg) << " dB" << std::endl;
   f.close ();
 }
 
@@ -112,8 +122,13 @@ main (int argc, char *argv[])
 
   Ptr<MmWaveUePhy> ue0Phy = ueNetDevices.Get (0)->GetObject<MmWaveUeNetDevice> ()->GetPhy ()->GetObject<MmWaveUePhy> ();
   Ptr<mmWaveChunkProcessor> testDlSinr0 = Create<mmWaveChunkProcessor> ();
-  testDlSinr0->AddCallback (MakeCallback (&ReportValue));
+  testDlSinr0->AddCallback (MakeCallback (&ReportDlValue));
   ue0Phy->GetDlSpectrumPhy ()->AddDataSinrChunkProcessor (testDlSinr0);
+
+  Ptr<MmWaveEnbPhy> enb0Phy = enbNetDevices.Get (0)->GetObject<MmWaveEnbNetDevice> ()->GetPhy ()->GetObject<MmWaveEnbPhy> ();
+  Ptr<mmWaveChunkProcessor> testUlSinr0 = Create<mmWaveChunkProcessor> ();
+  testUlSinr0->AddCallback (MakeCallback (&ReportUlValue));
+  enb0Phy->GetDlSpectrumPhy ()->AddDataSinrChunkProcessor (testUlSinr0);
 
   helper->AttachToClosestEnb (ueNetDevices, enbNetDevices);
   helper->EnableTraces ();
