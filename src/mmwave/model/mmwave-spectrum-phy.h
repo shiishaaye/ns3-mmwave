@@ -131,7 +131,7 @@ public:
   void SetTxPowerSpectralDensity (Ptr<SpectrumValue> TxPsd);
   void StartRx (Ptr<SpectrumSignalParameters> params);
   void StartRxData (Ptr<MmwaveSpectrumSignalParametersDataFrame> params);
-  void StartRxCtrl (Ptr<SpectrumSignalParameters> params);
+  void StartRxCtrl (Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> params);
   Ptr<SpectrumChannel> GetSpectrumChannel ();
   void SetCellId (uint16_t cellId);
 

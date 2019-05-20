@@ -334,10 +334,8 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
       // This should be done inside the UePhy class as a state machine
 
       bool isAllocated = true;
-      Ptr<MmWaveUeNetDevice> ueRx = 0;
-      ueRx = DynamicCast<MmWaveUeNetDevice> (GetDevice ());
-      Ptr<McUeNetDevice> rxMcUe = 0;
-      rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
+      Ptr<MmWaveUeNetDevice> ueRx = DynamicCast<MmWaveUeNetDevice> (GetDevice ());
+      Ptr<McUeNetDevice> rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
 
       if ((ueRx != 0) && (ueRx->GetPhy (m_componentCarrierId)->IsReceptionEnabled () == false))
         {               // if the first cast is 0 (the device is MC) then this if will not be executed
@@ -364,16 +362,19 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
     }
   else if (mmwaveDlCtrlRxParams != 0)
     {
+      // for CTRL messages interference is not considered
+
       // check if the signal is from a device in this cell
       if (mmwaveDlCtrlRxParams->cellId == m_cellId)
         {
           // if so, decode the signal
-          StartRxCtrl (params);
+          StartRxCtrl (mmwaveDlCtrlRxParams);
         }
     }
   else
   {
-    // TODO add the signal as interferer
+    // other type of signal
+    m_interferenceData->AddSignal (params->psd, params->duration);
   }
 }
 
@@ -384,68 +385,69 @@ MmWaveSpectrumPhy::StartRxData (Ptr<MmwaveSpectrumSignalParametersDataFrame> par
 
   NS_LOG_FUNCTION (this);
 
-  Ptr<MmWaveEnbNetDevice> enbRx = DynamicCast<MmWaveEnbNetDevice> (GetDevice ());
-  Ptr<MmWaveUeNetDevice> ueRx = DynamicCast<MmWaveUeNetDevice> (GetDevice ());
-  Ptr<McUeNetDevice> rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
-
   switch (m_state)
     {
-    case TX:
-      NS_FATAL_ERROR ("Cannot receive while transmitting");
-      break;
-    case RX_CTRL:
-      NS_FATAL_ERROR ("Cannot receive control in data period");
-      break;
-    case RX_DATA:
-    case IDLE:
-      {
-        if (params->cellId == m_cellId)
-          {
-            if (m_rxPacketBurstList.empty ())
-              {
-                NS_ASSERT (m_state == IDLE);
-                // first transmission, i.e., we're IDLE and we start RX
-                m_firstRxStart = Simulator::Now ();
-                m_firstRxDuration = params->duration;
-                NS_LOG_LOGIC (this << " scheduling EndRx with delay " << params->duration.GetSeconds () << "s");
+      case TX:
+        NS_FATAL_ERROR ("Cannot receive while transmitting");
+        break;
 
-                m_endRxDataEvent = Simulator::Schedule (params->duration, &MmWaveSpectrumPhy::EndRxData, this);
-              }
-            else
-              {
-                NS_ASSERT (m_state == RX_DATA);
-                // sanity check: if there are multiple RX events, they
-                // should occur at the same time and have the same
-                // duration, otherwise the interference calculation
-                // won't be correct
-                NS_ASSERT ((m_firstRxStart == Simulator::Now ()) && (m_firstRxDuration == params->duration));
-              }
+      case RX_CTRL:
+        NS_FATAL_ERROR ("Cannot receive control in data period");
+        break;
 
-            ChangeState (RX_DATA);
+      case RX_DATA:
+      case IDLE:
+        {
+          if (params->cellId == m_cellId) // TODO we already controlled this in before
+            {
+              if (m_rxPacketBurstList.empty ())
+                {
+                  NS_ASSERT (m_state == IDLE);
+                  // first transmission, i.e., we're IDLE and we start RX
+                  m_firstRxStart = Simulator::Now ();
+                  m_firstRxDuration = params->duration;
+                  NS_LOG_LOGIC (this << " scheduling EndRx with delay " << params->duration.GetSeconds () << "s");
 
-            if (params->packetBurst && !params->packetBurst->GetPackets ().empty ())
-              {
-                m_rxPacketBurstList.push_back (params->packetBurst);
-              }
+                  m_endRxDataEvent = Simulator::Schedule (params->duration, &MmWaveSpectrumPhy::EndRxData, this);
 
-            m_rxControlMessageList.insert (m_rxControlMessageList.end (), params->ctrlMsgList.begin (), params->ctrlMsgList.end ());
+                  ChangeState (RX_DATA);
+                }
+              else
+                {
+                  NS_ASSERT (m_state == RX_DATA);
+                  // sanity check: if there are multiple RX events, they
+                  // should occur at the same time and have the same
+                  // duration, otherwise the interference calculation
+                  // won't be correct
+                  NS_ASSERT ((m_firstRxStart == Simulator::Now ()) && (m_firstRxDuration == params->duration));
+                }
 
-            NS_LOG_LOGIC (this << " numSimultaneousRxEvents = " << m_rxPacketBurstList.size ());
-          }
-        else
-          {
-            NS_LOG_LOGIC (this << " not in sync with this signal (cellId="
-                               << params->cellId  << ", m_cellId=" << m_cellId << ")");
-          }
-      }
-      break;
-    default:
-      NS_FATAL_ERROR ("Programming Error: Unknown State");
+
+              if (params->packetBurst && !params->packetBurst->GetPackets ().empty ())
+                {
+                  m_rxPacketBurstList.push_back (params->packetBurst);
+                }
+
+              m_rxControlMessageList.insert (m_rxControlMessageList.end (), params->ctrlMsgList.begin (), params->ctrlMsgList.end ());
+
+              NS_LOG_LOGIC (this << " numSimultaneousRxEvents = " << m_rxPacketBurstList.size ());
+            }
+          else
+            {
+              // TODO here we do not enter
+              NS_LOG_LOGIC (this << " not in sync with this signal (cellId="
+                                 << params->cellId  << ", m_cellId=" << m_cellId << ")");
+            }
+        }
+        break;
+
+      default:
+        NS_FATAL_ERROR ("Programming Error: Unknown State");
     }
 }
 
 void
-MmWaveSpectrumPhy::StartRxCtrl (Ptr<SpectrumSignalParameters> params)
+MmWaveSpectrumPhy::StartRxCtrl (Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> params)
 {
   NS_LOG_FUNCTION (this);
   // RDF: method currently supports Downlink control only!
@@ -454,52 +456,35 @@ MmWaveSpectrumPhy::StartRxCtrl (Ptr<SpectrumSignalParameters> params)
     case TX:
       NS_FATAL_ERROR ("Cannot RX while TX: according to FDD channel access, the physical layer for transmission cannot be used for reception");
       break;
+
     case RX_DATA:
       NS_FATAL_ERROR ("Cannot RX data while receiving control");
       break;
+
     case RX_CTRL:
     case IDLE:
       {
         // the behavior is similar when we're IDLE or RX because we can receive more signals
         // simultaneously (e.g., at the eNB).
-        Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> dlCtrlRxParams = \
-          DynamicCast<MmWaveSpectrumSignalParametersDlCtrlFrame> (params);
+        Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> dlCtrlRxParams = DynamicCast<MmWaveSpectrumSignalParametersDlCtrlFrame> (params);
+
         // To check if we're synchronized to this signal, we check for the CellId
-        uint16_t cellId = 0;
-        if (dlCtrlRxParams != 0)
+        if (dlCtrlRxParams->cellId  == m_cellId) // TODO we already checked this before
           {
-            cellId = dlCtrlRxParams->cellId;
-          }
-        else
-          {
-            NS_LOG_ERROR ("SpectrumSignalParameters type not supported");
-          }
-        // check presence of PSS for UE measuerements
-        /*if (dlCtrlRxParams->pss == true)
-        {
-                SpectrumValue pssPsd = *params->psd;
-                if (!m_phyRxPssCallback.IsNull ())
-                {
-                        m_phyRxPssCallback (cellId, params->psd);
-                }
-        }*/
-        if (cellId  == m_cellId)
-          {
-            if (m_state == RX_CTRL)
+            NS_LOG_LOGIC (this << " synchronized with this signal (cellId=" << m_cellId << ")");
+
+            if (m_state == RX_CTRL) // TODO maybe move this in the RX_CTRL case
               {
-                Ptr<MmWaveUeNetDevice> ueRx =
-                  DynamicCast<MmWaveUeNetDevice> (GetDevice ());
-                Ptr<McUeNetDevice> rxMcUe =
-                  DynamicCast<McUeNetDevice> (GetDevice ());
+                Ptr<MmWaveUeNetDevice> ueRx = DynamicCast<MmWaveUeNetDevice> (GetDevice ());
+                Ptr<McUeNetDevice> rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
                 if (ueRx || rxMcUe)
                   {
                     NS_FATAL_ERROR ("UE already receiving control data from serving cell");
                   }
-                NS_ASSERT ((m_firstRxStart == Simulator::Now ())
-                           && (m_firstRxDuration == params->duration));
+                NS_ASSERT ((m_firstRxStart == Simulator::Now ()) && (m_firstRxDuration == params->duration));
               }
-            NS_LOG_LOGIC (this << " synchronized with this signal (cellId=" << cellId << ")");
-            if (m_state == IDLE)
+
+            if (m_state == IDLE) // TODO change this to an else if
               {
                 // first transmission, i.e., we're IDLE and we start RX
                 NS_ASSERT (m_rxControlMessageList.empty ());
@@ -513,6 +498,7 @@ MmWaveSpectrumPhy::StartRxCtrl (Ptr<SpectrumSignalParameters> params)
               }
             else
               {
+                // TODO if we enter here it means that we are in the RX_CTRL state, then move this to the if before
                 m_rxControlMessageList.insert (m_rxControlMessageList.end (), dlCtrlRxParams->ctrlMsgList.begin (), dlCtrlRxParams->ctrlMsgList.end ());
               }
 
