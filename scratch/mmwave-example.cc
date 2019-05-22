@@ -51,7 +51,7 @@ main (int argc, char *argv[])
   int ciao = 0;
 
   CommandLine cmd;
-  cmd.AddValue ("ciao", ciao);
+  cmd.AddValue ("ciao", "ciao", ciao);
   cmd.Parse (argc, argv);
 
   /* Information regarding the traces generated:
