@@ -447,6 +447,29 @@ MmWaveSpectrumPhy::StartRxCtrl (Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> d
         break;
 
       case RX_CTRL:
+        {
+          // To check if we're synchronized to this signal, we check for the CellId
+          if (dlCtrlRxParams->cellId  == m_cellId)
+            {
+              NS_LOG_LOGIC (this << " synchronized with this signal (cellId=" << m_cellId << ")");
+
+              Ptr<MmWaveUeNetDevice> ueRx = DynamicCast<MmWaveUeNetDevice> (GetDevice ());
+              Ptr<McUeNetDevice> rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
+              if (ueRx || rxMcUe)
+                {
+                  NS_FATAL_ERROR ("UE already receiving control data from serving cell");
+                }
+              NS_ASSERT ((m_firstRxStart == Simulator::Now ()) && (m_firstRxDuration == dlCtrlRxParams->duration));
+
+              m_rxControlMessageList.insert (m_rxControlMessageList.end (), dlCtrlRxParams->ctrlMsgList.begin (), dlCtrlRxParams->ctrlMsgList.end ());
+            }
+          else
+            {
+              NS_LOG_LOGIC (this << " not in sync with this signal (cellId=" << dlCtrlRxParams->cellId  << ", m_cellId=" << m_cellId << ")");
+            }
+          break;
+        }
+
       case IDLE:
         {
           // the behavior is similar when we're IDLE or RX because we can receive more signals
@@ -457,36 +480,16 @@ MmWaveSpectrumPhy::StartRxCtrl (Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> d
             {
               NS_LOG_LOGIC (this << " synchronized with this signal (cellId=" << m_cellId << ")");
 
-              if (m_state == RX_CTRL) // TODO maybe move this in the RX_CTRL case
-                {
-                  Ptr<MmWaveUeNetDevice> ueRx = DynamicCast<MmWaveUeNetDevice> (GetDevice ());
-                  Ptr<McUeNetDevice> rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
-                  if (ueRx || rxMcUe)
-                    {
-                      NS_FATAL_ERROR ("UE already receiving control data from serving cell");
-                    }
-                  NS_ASSERT ((m_firstRxStart == Simulator::Now ()) && (m_firstRxDuration == dlCtrlRxParams->duration));
-                }
+              // first transmission, i.e., we're IDLE and we start RX
+              NS_ASSERT (m_rxControlMessageList.empty ());
+              m_firstRxStart = Simulator::Now ();
+              m_firstRxDuration = dlCtrlRxParams->duration;
+              NS_LOG_LOGIC (this << " scheduling EndRx with delay " << dlCtrlRxParams->duration);
 
-              if (m_state == IDLE) // TODO change this to an else if
-                {
-                  // first transmission, i.e., we're IDLE and we start RX
-                  NS_ASSERT (m_rxControlMessageList.empty ());
-                  m_firstRxStart = Simulator::Now ();
-                  m_firstRxDuration = dlCtrlRxParams->duration;
-                  NS_LOG_LOGIC (this << " scheduling EndRx with delay " << dlCtrlRxParams->duration);
-
-                  // store the DCIs
-                  m_rxControlMessageList = dlCtrlRxParams->ctrlMsgList;
-                  m_endRxDlCtrlEvent = Simulator::Schedule (dlCtrlRxParams->duration, &MmWaveSpectrumPhy::EndRxCtrl, this);
-                  ChangeState (RX_CTRL);
-                }
-              else
-                {
-                  // TODO if we enter here it means that we are in the RX_CTRL state, then move this to the if before
-                  m_rxControlMessageList.insert (m_rxControlMessageList.end (), dlCtrlRxParams->ctrlMsgList.begin (), dlCtrlRxParams->ctrlMsgList.end ());
-                }
-
+              // store the DCIs
+              m_rxControlMessageList = dlCtrlRxParams->ctrlMsgList;
+              m_endRxDlCtrlEvent = Simulator::Schedule (dlCtrlRxParams->duration, &MmWaveSpectrumPhy::EndRxCtrl, this);
+              ChangeState (RX_CTRL);
             }
           else
             {
@@ -494,6 +497,7 @@ MmWaveSpectrumPhy::StartRxCtrl (Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> d
             }
           break;
         }
+        
       default:
         {
           NS_FATAL_ERROR ("unknown state");
