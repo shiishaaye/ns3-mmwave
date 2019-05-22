@@ -367,7 +367,6 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 void
 MmWaveSpectrumPhy::StartRxData (Ptr<MmwaveSpectrumSignalParametersDataFrame> params)
 {
-  m_interferenceData->StartRx (params->psd);
 
   NS_LOG_FUNCTION (this);
 
@@ -387,6 +386,9 @@ MmWaveSpectrumPhy::StartRxData (Ptr<MmwaveSpectrumSignalParametersDataFrame> par
           // check if the signal comes from a device connected to this cell
           if (params->cellId == m_cellId)
             {
+              // this is a useful signal
+              m_interferenceData->StartRx (params->psd);
+
               if (m_rxPacketBurstList.empty ())
                 {
                   NS_ASSERT (m_state == IDLE);

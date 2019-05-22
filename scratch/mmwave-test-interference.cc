@@ -57,9 +57,15 @@ main (int argc, char *argv[])
 {
   double dist = 50;
   double simTime = 100;
+  uint32_t runSet = 1;
+
+  CommandLine cmd;
+  cmd.AddValue ("runSet", "run set", runSet);
+  cmd.Parse (argc, argv);
+
   // RNG
   RngSeedManager::SetSeed (1);
-  RngSeedManager::SetRun (1);
+  RngSeedManager::SetRun (runSet);
 
   // set output file names
   std::string filePath;
