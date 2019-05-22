@@ -172,9 +172,9 @@ MmWaveSpectrumPhy::SetDevice (Ptr<NetDevice> d)
 {
   m_device = d;
 
-  Ptr<MmWaveEnbNetDevice> enbNetDev =
-    DynamicCast<MmWaveEnbNetDevice> (GetDevice ());
+  Ptr<MmWaveEnbNetDevice> enbNetDev = DynamicCast<MmWaveEnbNetDevice> (GetDevice ());
 
+  // TODO m_isEnb is never used
   if (enbNetDev != 0)
     {
       m_isEnb = true;
@@ -242,7 +242,6 @@ MmWaveSpectrumPhy::SetNoisePowerSpectralDensity (Ptr<const SpectrumValue> noiseP
   NS_ASSERT (noisePsd);
   m_rxSpectrumModel = noisePsd->GetSpectrumModel ();
   m_interferenceData->SetNoisePowerSpectralDensity (noisePsd);
-
 }
 
 void
@@ -476,6 +475,7 @@ MmWaveSpectrumPhy::StartRxCtrl (Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> d
                   m_firstRxStart = Simulator::Now ();
                   m_firstRxDuration = dlCtrlRxParams->duration;
                   NS_LOG_LOGIC (this << " scheduling EndRx with delay " << dlCtrlRxParams->duration);
+
                   // store the DCIs
                   m_rxControlMessageList = dlCtrlRxParams->ctrlMsgList;
                   m_endRxDlCtrlEvent = Simulator::Schedule (dlCtrlRxParams->duration, &MmWaveSpectrumPhy::EndRxCtrl, this);
@@ -686,9 +686,7 @@ MmWaveSpectrumPhy::EndRxData ()
                           if (itTb->second.corrupt)
                             {
                               (*itHarq).second.m_harqStatus = DlHarqInfo::NACK;
-                              NS_LOG_DEBUG ("UE" << rnti << " send DL-HARQ-NACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
-                                            " size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
-                                            " mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
+                              NS_LOG_DEBUG ("UE" << rnti << " send DL-HARQ-NACK" << " harqId " << (unsigned)itTb->second.harqProcessId << " size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs << " mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
                               m_harqPhyModule->UpdateDlHarqProcessStatus (rnti, itTb->second.harqProcessId, itTb->second.mi, itTb->second.size, itTb->second.size / EffectiveCodingRate [itTb->second.mcs]);
                             }
                           else
