@@ -48,7 +48,10 @@ main (int argc, char *argv[])
   Config::SetDefault ("ns3::MmWavePhyMacCommon::ResourceBlockNum", UintegerValue (1));
   Config::SetDefault ("ns3::MmWavePhyMacCommon::ChunkPerRB", UintegerValue (72));
 
+  int ciao = 0;
+
   CommandLine cmd;
+  cmd.AddValue ("ciao", ciao);
   cmd.Parse (argc, argv);
 
   /* Information regarding the traces generated:
