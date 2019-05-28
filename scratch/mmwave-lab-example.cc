@@ -1,3 +1,9 @@
+// In this example we consider a simple mmwave cellular network with one
+// BS and one UE.
+//
+// (0,0,10)                                                    (distance,0,1.6)
+//   BS <----------------------distance---------------------------->UE
+
 #include "ns3/core-module.h"
 #include "ns3/mobility-module.h"
 #include "ns3/mmwave-helper.h"
