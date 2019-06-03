@@ -499,7 +499,7 @@ MmWaveSpectrumPhy::StartRxCtrl (Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> d
             }
           break;
         }
-        
+
       default:
         {
           NS_FATAL_ERROR ("unknown state");
@@ -617,20 +617,14 @@ MmWaveSpectrumPhy::EndRxData ()
               traceParams.m_numSym = itTb->second.numSym;
               traceParams.m_ccId = m_componentCarrierId;
 
-              Ptr<MmWaveEnbNetDevice> enbRx = DynamicCast<MmWaveEnbNetDevice> (GetDevice ());
-              Ptr<MmWaveUeNetDevice> ueRx = DynamicCast<MmWaveUeNetDevice> (GetDevice ());
-              Ptr<McUeNetDevice> rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
-
-              if (enbRx)
+              if (!itTb->second.downlink)
                 {
+                  // eNB received an uplink TB
                   m_rxPacketTraceEnb (traceParams);
                 }
-              else if (ueRx)
+              else
                 {
-                  m_rxPacketTraceUe (traceParams);
-                }
-              else if (rxMcUe)
-                {
+                  // UE received a downlink TB
                   m_rxPacketTraceUe (traceParams);
                 }
 
