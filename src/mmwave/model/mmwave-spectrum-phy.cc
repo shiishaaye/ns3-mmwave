@@ -518,16 +518,6 @@ MmWaveSpectrumPhy::EndRxData ()
   // compute the average SINR
   double sinrAvg = Sum (m_sinrPerceived) / (m_sinrPerceived.GetSpectrumModel ()->GetNumBands ());
 
-  // compute the minumum SINR
-  double sinrMin = 99999999999;
-  for (Values::const_iterator it = m_sinrPerceived.ConstValuesBegin (); it != m_sinrPerceived.ConstValuesEnd (); it++)
-    {
-      if (*it < sinrMin)
-        {
-          sinrMin = *it;
-        }
-    }
-
   // check if the transmissions succeeded or failed
   ExpectedTbMap_t::iterator itTb = m_expectedTbs.begin ();
   while (itTb != m_expectedTbs.end ())
@@ -610,7 +600,7 @@ MmWaveSpectrumPhy::EndRxData ()
               traceParams.m_mcs = itTb->second.mcs;
               traceParams.m_rv = itTb->second.rv;
               traceParams.m_sinr = sinrAvg;
-              traceParams.m_sinrMin = itTb->second.mi; //sinrMin; // TODO why this field does not carry sinrMin??
+              traceParams.m_sinrMin = itTb->second.mi; // TODO why this field does not carry sinrMin?
               traceParams.m_tbler = itTb->second.tbler;
               traceParams.m_corrupt = itTb->second.corrupt;
               traceParams.m_symStart = itTb->second.symStart;
